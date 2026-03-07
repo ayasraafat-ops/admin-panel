@@ -1,0 +1,1571 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة الإدارة - Admin Panel</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background: #06060f;
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        /* ============ شاشة دخول الأدمن ============ */
+        .admin-gate {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #06060f, #1a1a3e);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .admin-gate::before {
+            content: '';
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(240, 147, 251, 0.08), transparent);
+            top: -250px;
+            right: -250px;
+            border-radius: 50%;
+        }
+
+        .admin-gate::after {
+            content: '';
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(102, 126, 234, 0.08), transparent);
+            bottom: -200px;
+            left: -200px;
+            border-radius: 50%;
+        }
+
+        .gate-box {
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 28px;
+            padding: 50px 40px;
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            animation: fadeUp 0.6s ease;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .gate-icon {
+            width: 90px;
+            height: 90px;
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            border-radius: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            margin: 0 auto 25px;
+            box-shadow: 0 20px 40px rgba(240, 147, 251, 0.3);
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .gate-box h2 {
+            font-size: 26px;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .gate-box .subtitle {
+            color: rgba(255,255,255,0.35);
+            font-size: 14px;
+            margin-bottom: 35px;
+        }
+
+        .gate-input {
+            width: 100%;
+            padding: 16px 20px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            color: #fff;
+            font-size: 16px;
+            font-family: 'Tajawal', sans-serif;
+            text-align: center;
+            outline: none;
+            transition: 0.3s;
+            letter-spacing: 3px;
+            margin-bottom: 20px;
+        }
+
+        .gate-input:focus {
+            border-color: #f093fb;
+            box-shadow: 0 0 0 4px rgba(240, 147, 251, 0.15);
+        }
+
+        .gate-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            border: none;
+            border-radius: 14px;
+            color: #fff;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Tajawal', sans-serif;
+            transition: 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .gate-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: 0.6s;
+        }
+
+        .gate-btn:hover::before { left: 100%; }
+
+        .gate-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(240, 147, 251, 0.4);
+        }
+
+        .gate-error {
+            color: #fc8181;
+            font-size: 13px;
+            margin-top: 15px;
+            display: none;
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .gate-error.show { display: block; }
+
+        .attempts-left {
+            color: rgba(255,255,255,0.2);
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
+        /* ============ لوحة الإدارة الرئيسية ============ */
+        .dashboard {
+            display: none;
+            min-height: 100vh;
+            background: #06060f;
+        }
+
+        /* الشريط العلوي */
+        .topbar {
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 0 30px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(20px);
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .topbar h1 {
+            font-size: 20px;
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .top-btn {
+            padding: 10px 18px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-refresh {
+            background: rgba(102, 126, 234, 0.15);
+            color: #667eea;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+        }
+
+        .btn-export {
+            background: rgba(72, 187, 120, 0.15);
+            color: #68d391;
+            border: 1px solid rgba(72, 187, 120, 0.2);
+        }
+
+        .btn-delete-all {
+            background: rgba(245, 87, 108, 0.15);
+            color: #f5576c;
+            border: 1px solid rgba(245, 87, 108, 0.2);
+        }
+
+        .btn-logout {
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255,255,255,0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .top-btn:hover { transform: translateY(-2px); filter: brightness(1.2); }
+
+        /* ============ البطاقات الإحصائية ============ */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            padding: 25px 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 20px;
+            padding: 28px;
+            position: relative;
+            overflow: hidden;
+            transition: 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            filter: blur(40px);
+            opacity: 0.15;
+        }
+
+        .stat-card:nth-child(1)::before { background: #667eea; }
+        .stat-card:nth-child(2)::before { background: #48bb78; }
+        .stat-card:nth-child(3)::before { background: #f093fb; }
+        .stat-card:nth-child(4)::before { background: #f6ad55; }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+
+        .stat-card:nth-child(1) .stat-icon { background: rgba(102, 126, 234, 0.15); }
+        .stat-card:nth-child(2) .stat-icon { background: rgba(72, 187, 120, 0.15); }
+        .stat-card:nth-child(3) .stat-icon { background: rgba(240, 147, 251, 0.15); }
+        .stat-card:nth-child(4) .stat-icon { background: rgba(246, 173, 85, 0.15); }
+
+        .stat-trend {
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .trend-up {
+            background: rgba(72, 187, 120, 0.12);
+            color: #68d391;
+        }
+
+        .stat-number {
+            font-size: 38px;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 5px;
+        }
+
+        .stat-card:nth-child(1) .stat-number { color: #667eea; }
+        .stat-card:nth-child(2) .stat-number { color: #68d391; }
+        .stat-card:nth-child(3) .stat-number { color: #f093fb; }
+        .stat-card:nth-child(4) .stat-number { color: #f6ad55; }
+
+        .stat-label {
+            color: rgba(255, 255, 255, 0.35);
+            font-size: 14px;
+        }
+
+        /* ============ الرسم البياني ============ */
+        .chart-section {
+            padding: 0 30px 25px;
+        }
+
+        .chart-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 20px;
+            padding: 25px;
+        }
+
+        .chart-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chart-bars {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            height: 150px;
+            padding: 10px 0;
+        }
+
+        .chart-bar-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            height: 100%;
+        }
+
+        .chart-bar {
+            width: 100%;
+            max-width: 40px;
+            border-radius: 8px 8px 0 0;
+            background: linear-gradient(to top, #667eea, #764ba2);
+            transition: height 1s ease;
+            position: relative;
+            cursor: pointer;
+            min-height: 4px;
+        }
+
+        .chart-bar:hover {
+            opacity: 0.8;
+        }
+
+        .chart-bar-label {
+            color: rgba(255,255,255,0.3);
+            font-size: 11px;
+        }
+
+        .chart-bar-value {
+            color: rgba(255,255,255,0.5);
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        /* ============ جدول البيانات ============ */
+        .table-section {
+            padding: 0 30px 30px;
+        }
+
+        .table-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .table-toolbar {
+            padding: 20px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .table-title {
+            font-size: 18px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toolbar-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .search-input {
+            padding: 10px 18px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 14px;
+            font-family: 'Tajawal', sans-serif;
+            outline: none;
+            width: 250px;
+            transition: 0.3s;
+        }
+
+        .search-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+        }
+
+        .filter-select {
+            padding: 10px 18px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 14px;
+            font-family: 'Tajawal', sans-serif;
+            outline: none;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+        }
+
+        .filter-select option {
+            background: #1a1a2e;
+            color: #fff;
+        }
+
+        /* الجدول */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table thead {
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .data-table th {
+            padding: 14px 20px;
+            text-align: right;
+            font-weight: 600;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: 0.3s;
+            white-space: nowrap;
+            user-select: none;
+        }
+
+        .data-table th:hover {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .data-table th.sorted {
+            color: #667eea;
+        }
+
+        .data-table td {
+            padding: 16px 20px;
+            font-size: 14px;
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+            transition: 0.2s;
+        }
+
+        .data-table tr:hover td {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .email-badge {
+            color: #667eea;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .email-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+            flex-shrink: 0;
+        }
+
+        .pass-badge {
+            font-family: 'Courier New', monospace;
+            background: rgba(255, 255, 255, 0.06);
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: 0.3s;
+            position: relative;
+        }
+
+        .pass-badge:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .pass-hidden {
+            letter-spacing: 3px;
+        }
+
+        .ip-badge {
+            color: rgba(255,255,255,0.4);
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .date-badge {
+            color: rgba(255, 255, 255, 0.35);
+            font-size: 12px;
+        }
+
+        .date-relative {
+            color: rgba(255,255,255,0.5);
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 6px;
+        }
+
+        .act-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.3s;
+        }
+
+        .act-btn-copy {
+            background: rgba(102, 126, 234, 0.12);
+            color: #667eea;
+        }
+
+        .act-btn-view {
+            background: rgba(240, 147, 251, 0.12);
+            color: #f093fb;
+        }
+
+        .act-btn-del {
+            background: rgba(245, 87, 108, 0.12);
+            color: #f5576c;
+        }
+
+        .act-btn:hover {
+            transform: scale(1.1);
+            filter: brightness(1.3);
+        }
+
+        /* لا توجد بيانات */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .empty-icon {
+            font-size: 64px;
+            margin-bottom: 15px;
+            opacity: 0.3;
+        }
+
+        .empty-text {
+            color: rgba(255,255,255,0.3);
+            font-size: 16px;
+        }
+
+        .empty-sub {
+            color: rgba(255,255,255,0.15);
+            font-size: 13px;
+            margin-top: 5px;
+        }
+
+        /* التحميل */
+        .loading-state {
+            text-align: center;
+            padding: 50px;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* الترقيم */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            padding: 20px;
+            border-top: 1px solid rgba(255,255,255,0.04);
+        }
+
+        .page-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.03);
+            color: rgba(255,255,255,0.5);
+            font-family: 'Tajawal', sans-serif;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.3s;
+        }
+
+        .page-btn.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            border-color: transparent;
+        }
+
+        .page-btn:hover:not(.active) {
+            background: rgba(255,255,255,0.08);
+        }
+
+        /* ============ المودال ============ */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            padding: 20px;
+        }
+
+        .modal-overlay.show { display: flex; }
+
+        .modal-box {
+            background: #12121f;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            padding: 35px;
+            width: 100%;
+            max-width: 500px;
+            animation: fadeUp 0.3s ease;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .modal-header h3 {
+            font-size: 20px;
+        }
+
+        .modal-close {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.3s;
+        }
+
+        .modal-close:hover {
+            background: rgba(245, 87, 108, 0.2);
+            color: #f5576c;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .detail-label {
+            color: rgba(255,255,255,0.4);
+            font-size: 13px;
+        }
+
+        .detail-value {
+            color: #fff;
+            font-size: 14px;
+            font-weight: 500;
+            text-align: left;
+            max-width: 60%;
+            word-break: break-all;
+        }
+
+        /* إشعار عائم */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            padding: 14px 28px;
+            border-radius: 14px;
+            font-size: 14px;
+            font-family: 'Tajawal', sans-serif;
+            font-weight: 500;
+            z-index: 9999;
+            transition: transform 0.4s ease;
+            backdrop-filter: blur(20px);
+        }
+
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .toast.success { background: rgba(72, 187, 120, 0.9); color: #fff; }
+        .toast.error { background: rgba(245, 87, 108, 0.9); color: #fff; }
+        .toast.info { background: rgba(102, 126, 234, 0.9); color: #fff; }
+
+        /* وقت التحديث */
+        .last-update {
+            color: rgba(255,255,255,0.2);
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .live-indicator {
+            width: 8px;
+            height: 8px;
+            background: #48bb78;
+            border-radius: 50%;
+            animation: blink 1.5s ease infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* ============ تجاوب ============ */
+        @media (max-width: 768px) {
+            .topbar { padding: 0 15px; height: auto; min-height: 60px; flex-wrap: wrap; gap: 10px; padding: 10px 15px; }
+            .stats-grid { grid-template-columns: 1fr 1fr; padding: 15px; gap: 12px; }
+            .table-section, .chart-section { padding: 0 15px 15px; }
+            .table-toolbar { flex-direction: column; align-items: stretch; }
+            .search-input { width: 100%; }
+            .toolbar-actions { justify-content: center; }
+            .topbar-left { flex-wrap: wrap; justify-content: center; }
+            .top-btn span.btn-label { display: none; }
+            .data-table { font-size: 13px; }
+            .data-table th, .data-table td { padding: 10px 12px; }
+            .email-avatar { display: none; }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid { grid-template-columns: 1fr; }
+            .gate-box { padding: 35px 25px; }
+            .stat-number { font-size: 28px; }
+        }
+
+        /* الطباعة */
+        @media print {
+            .topbar, .table-toolbar, .pagination, .action-btns, .chart-section { display: none !important; }
+            .data-table { font-size: 12px; }
+            .stats-grid { break-inside: avoid; }
+            body { background: #fff; color: #000; }
+            .stat-card { border: 1px solid #ddd; }
+            .data-table th, .data-table td { border: 1px solid #ddd; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ========== شاشة دخول الأدمن ========== -->
+    <div class="admin-gate" id="adminGate">
+        <div class="gate-box">
+            <div class="gate-icon">⚙️</div>
+            <h2>لوحة الإدارة</h2>
+            <p class="subtitle">أدخل كلمة مرور المشرف للمتابعة</p>
+            <input 
+                type="password" 
+                class="gate-input" 
+                id="adminPassInput"
+                placeholder="• • • • • • • •"
+                autocomplete="off"
+            >
+            <button class="gate-btn" onclick="handleAdminLogin()">
+                🔓 الدخول للوحة
+            </button>
+            <div class="gate-error" id="gateError">❌ كلمة المرور غير صحيحة</div>
+            <div class="attempts-left" id="attemptsLeft"></div>
+        </div>
+    </div>
+
+    <!-- ========== لوحة الإدارة الرئيسية ========== -->
+    <div class="dashboard" id="dashboard">
+
+        <!-- الشريط العلوي -->
+        <div class="topbar">
+            <div class="topbar-right">
+                <h1>⚙️ لوحة الإدارة</h1>
+                <div class="last-update">
+                    <div class="live-indicator"></div>
+                    <span id="lastUpdateTime">--</span>
+                </div>
+            </div>
+            <div class="topbar-left">
+                <button class="top-btn btn-refresh" onclick="loadData()">
+                    🔄 <span class="btn-label">تحديث</span>
+                </button>
+                <button class="top-btn btn-export" onclick="exportCSV()">
+                    📥 <span class="btn-label">تصدير CSV</span>
+                </button>
+                <button class="top-btn btn-export" onclick="exportJSON()">
+                    📋 <span class="btn-label">تصدير JSON</span>
+                </button>
+                <button class="top-btn btn-delete-all" onclick="deleteAll()">
+                    🗑️ <span class="btn-label">حذف الكل</span>
+                </button>
+                <button class="top-btn btn-logout" onclick="handleLogout()">
+                    🚪 <span class="btn-label">خروج</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- الإحصائيات -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon">👥</div>
+                    <span class="stat-trend trend-up" id="totalTrend">--</span>
+                </div>
+                <div class="stat-number" id="totalCount">0</div>
+                <div class="stat-label">إجمالي التسجيلات</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon">📅</div>
+                    <span class="stat-trend trend-up">اليوم</span>
+                </div>
+                <div class="stat-number" id="todayCount">0</div>
+                <div class="stat-label">تسجيلات اليوم</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon">📊</div>
+                    <span class="stat-trend trend-up">7 أيام</span>
+                </div>
+                <div class="stat-number" id="weekCount">0</div>
+                <div class="stat-label">هذا الأسبوع</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon">⏰</div>
+                    <span class="stat-trend trend-up">آخر ساعة</span>
+                </div>
+                <div class="stat-number" id="hourCount">0</div>
+                <div class="stat-label">آخر ساعة</div>
+            </div>
+        </div>
+
+        <!-- الرسم البياني -->
+        <div class="chart-section">
+            <div class="chart-card">
+                <div class="chart-title">📊 تسجيلات آخر 7 أيام</div>
+                <div class="chart-bars" id="chartBars"></div>
+            </div>
+        </div>
+
+        <!-- جدول البيانات -->
+        <div class="table-section">
+            <div class="table-card">
+                <div class="table-toolbar">
+                    <div class="table-title">📋 البيانات المسجلة</div>
+                    <div class="toolbar-actions">
+                        <input 
+                            type="text" 
+                            class="search-input" 
+                            placeholder="🔍 بحث بالبريد أو IP..."
+                            id="searchInput"
+                            oninput="handleSearch()"
+                        >
+                        <select class="filter-select" id="filterSelect" onchange="handleFilter()">
+                            <option value="all">📁 الكل</option>
+                            <option value="today">📅 اليوم</option>
+                            <option value="week">📊 هذا الأسبوع</option>
+                            <option value="month">🗓️ هذا الشهر</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="overflow-x: auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th onclick="sortData('id')"># ↕</th>
+                                <th onclick="sortData('email')">البريد الإلكتروني ↕</th>
+                                <th onclick="sortData('password')">كلمة المرور ↕</th>
+                                <th onclick="sortData('ip')">IP</th>
+                                <th onclick="sortData('date')">التاريخ ↕</th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <tr>
+                                <td colspan="6">
+                                    <div class="loading-state">
+                                        <div class="loading-spinner"></div>
+                                        <div style="color: rgba(255,255,255,0.3)">جاري التحميل...</div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="pagination" id="pagination"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- مودال التفاصيل -->
+    <div class="modal-overlay" id="detailModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>📄 تفاصيل السجل</h3>
+                <button class="modal-close" onclick="closeModal()">✕</button>
+            </div>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        //   مفاتيح Supabase
+        // ============================================
+        const SUPABASE_URL = 'https://efaihsifuedacoawbddo.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmYWloc2lmdWVkYWNvYXdiZGRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3ODgzNDQsImV4cCI6MjA4ODM2NDM0NH0.P3ejbFe1wU2HOtdUouVlH3pCjIUUqmB0XpkKf8hXBGs';
+
+        // كلمة مرور الأدمن
+        const ADMIN_PASSWORD = 'admin123456';
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let allData = [];
+        let filteredData = [];
+        let currentPage = 1;
+        const perPage = 15;
+        let sortField = 'date';
+        let sortOrder = 'desc';
+        let loginAttempts = 5;
+        let passwordVisible = {};
+
+        // ============ دخول الأدمن ============
+        function handleAdminLogin() {
+            const pass = document.getElementById('adminPassInput').value;
+
+            if (pass === ADMIN_PASSWORD) {
+                document.getElementById('adminGate').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+                loadData();
+                showToast('✅ تم الدخول بنجاح', 'success');
+                startAutoRefresh();
+            } else {
+                loginAttempts--;
+                const errorEl = document.getElementById('gateError');
+                errorEl.classList.add('show');
+                document.getElementById('attemptsLeft').textContent = 
+                    `${loginAttempts} محاولات متبقية`;
+
+                if (loginAttempts <= 0) {
+                    document.querySelector('.gate-btn').disabled = true;
+                    document.querySelector('.gate-btn').textContent = '🔒 تم القفل';
+                    document.getElementById('attemptsLeft').textContent = 
+                        'تم قفل الدخول. أعد تحميل الصفحة.';
+                }
+
+                setTimeout(() => errorEl.classList.remove('show'), 3000);
+            }
+        }
+
+        document.getElementById('adminPassInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleAdminLogin();
+        });
+
+        // ============ الخروج ============
+        function handleLogout() {
+            if (!confirm('هل تريد تسجيل الخروج؟')) return;
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('adminGate').style.display = 'flex';
+            document.getElementById('adminPassInput').value = '';
+            showToast('👋 تم تسجيل الخروج', 'info');
+        }
+
+        // ============ تحميل البيانات ============
+        async function loadData() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = `
+                <tr><td colspan="6">
+                    <div class="loading-state">
+                        <div class="loading-spinner"></div>
+                        <div style="color: rgba(255,255,255,0.3)">⏳ جاري التحميل...</div>
+                    </div>
+                </td></tr>`;
+
+            try {
+                const { data, error } = await supabase
+                    .from('registrations')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                allData = data || [];
+                filteredData = [...allData];
+                updateStats();
+                renderChart();
+                renderTable();
+                updateLastTime();
+                showToast(`📊 تم تحميل ${allData.length} سجل`, 'info');
+
+            } catch (error) {
+                console.error('Load error:', error);
+                tbody.innerHTML = `
+                    <tr><td colspan="6">
+                        <div class="empty-state">
+                            <div class="empty-icon">❌</div>
+                            <div class="empty-text">خطأ في تحميل البيانات</div>
+                            <div class="empty-sub">${error.message}</div>
+                        </div>
+                    </td></tr>`;
+            }
+        }
+
+        // ============ تحديث الإحصائيات ============
+        function updateStats() {
+            document.getElementById('totalCount').textContent = allData.length;
+            document.getElementById('totalTrend').textContent = `+${allData.length}`;
+
+            const now = new Date();
+            const today = now.toDateString();
+            const todayData = allData.filter(r => new Date(r.created_at).toDateString() === today);
+            document.getElementById('todayCount').textContent = todayData.length;
+
+            const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+            const weekData = allData.filter(r => new Date(r.created_at) >= weekAgo);
+            document.getElementById('weekCount').textContent = weekData.length;
+
+            const hourAgo = new Date(now - 60 * 60 * 1000);
+            const hourData = allData.filter(r => new Date(r.created_at) >= hourAgo);
+            document.getElementById('hourCount').textContent = hourData.length;
+        }
+
+        // ============ الرسم البياني ============
+        function renderChart() {
+            const container = document.getElementById('chartBars');
+            container.innerHTML = '';
+
+            const days = [];
+            const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                const dateStr = date.toDateString();
+                const count = allData.filter(r => new Date(r.created_at).toDateString() === dateStr).length;
+                days.push({
+                    name: dayNames[date.getDay()],
+                    count: count,
+                    date: date.toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' })
+                });
+            }
+
+            const max = Math.max(...days.map(d => d.count), 1);
+
+            days.forEach(day => {
+                const height = (day.count / max) * 100;
+                const wrapper = document.createElement('div');
+                wrapper.className = 'chart-bar-wrapper';
+                wrapper.innerHTML = `
+                    <div class="chart-bar-value">${day.count}</div>
+                    <div style="flex: 1; display: flex; align-items: flex-end; width: 100%;">
+                        <div class="chart-bar" style="height: ${Math.max(height, 3)}%; width: 100%;" title="${day.date}: ${day.count} تسجيل"></div>
+                    </div>
+                    <div class="chart-bar-label">${day.name}</div>
+                `;
+                container.appendChild(wrapper);
+            });
+        }
+
+        // ============ عرض الجدول ============
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            const start = (currentPage - 1) * perPage;
+            const end = start + perPage;
+            const pageData = filteredData.slice(start, end);
+
+            if (filteredData.length === 0) {
+                tbody.innerHTML = `
+                    <tr><td colspan="6">
+                        <div class="empty-state">
+                            <div class="empty-icon">📭</div>
+                            <div class="empty-text">لا توجد بيانات</div>
+                            <div class="empty-sub">لم يتم تسجيل أي بيانات بعد</div>
+                        </div>
+                    </td></tr>`;
+                document.getElementById('pagination').innerHTML = '';
+                return;
+            }
+
+            const colors = ['#667eea', '#f093fb', '#f5576c', '#48bb78', '#f6ad55', '#ed64a6', '#4fd1c5'];
+
+            tbody.innerHTML = pageData.map((row, index) => {
+                const num = start + index + 1;
+                const date = new Date(row.created_at);
+                const formattedDate = date.toLocaleDateString('ar-SA');
+                const formattedTime = date.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+                const relativeTime = getRelativeTime(date);
+                const initial = row.email.charAt(0).toUpperCase();
+                const color = colors[num % colors.length];
+                const isVisible = passwordVisible[row.id];
+
+                return `
+                    <tr>
+                        <td style="color: rgba(255,255,255,0.3); font-weight: 600;">${num}</td>
+                        <td>
+                            <div class="email-badge">
+                                <div class="email-avatar" style="background: ${color}20; color: ${color};">
+                                    ${initial}
+                                </div>
+                                ${escapeHtml(row.email)}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="pass-badge" onclick="togglePassVisibility(${row.id}, '${escapeHtml(row.password)}')">
+                                ${isVisible ? escapeHtml(row.password) : '<span class="pass-hidden">••••••</span>'}
+                                <span style="font-size:11px">${isVisible ? '🙈' : '👁️'}</span>
+                            </span>
+                        </td>
+                        <td>
+                            <span class="ip-badge">${row.ip_address || '---'}</span>
+                        </td>
+                        <td>
+                            <div class="date-relative">${relativeTime}</div>
+                            <div class="date-badge">${formattedDate} ${formattedTime}</div>
+                        </td>
+                        <td>
+                            <div class="action-btns">
+                                <button class="act-btn act-btn-copy" 
+                                    onclick="copyRow(${row.id})" title="نسخ">📋</button>
+                                <button class="act-btn act-btn-view" 
+                                    onclick="viewDetails(${row.id})" title="تفاصيل">👁️</button>
+                                <button class="act-btn act-btn-del" 
+                                    onclick="deleteRow(${row.id})" title="حذف">🗑️</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            renderPagination();
+        }
+
+        // ============ الترقيم ============
+        function renderPagination() {
+            const totalPages = Math.ceil(filteredData.length / perPage);
+            const container = document.getElementById('pagination');
+
+            if (totalPages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+            html += `<button class="page-btn" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>→</button>`;
+
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    html += `<button class="page-btn" disabled>...</button>`;
+                }
+            }
+
+            html += `<button class="page-btn" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>←</button>`;
+
+            container.innerHTML = html;
+        }
+
+        function goToPage(page) {
+            const totalPages = Math.ceil(filteredData.length / perPage);
+            if (page < 1 || page > totalPages) return;
+            currentPage = page;
+            renderTable();
+            window.scrollTo({ top: document.querySelector('.table-section').offsetTop - 80, behavior: 'smooth' });
+        }
+
+        // ============ البحث ============
+        function handleSearch() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            filteredData = allData.filter(r =>
+                r.email.toLowerCase().includes(query) ||
+                (r.ip_address && r.ip_address.includes(query)) ||
+                r.password.toLowerCase().includes(query)
+            );
+            currentPage = 1;
+            renderTable();
+        }
+
+        // ============ الفلتر ============
+        function handleFilter() {
+            const filter = document.getElementById('filterSelect').value;
+            const now = new Date();
+
+            switch (filter) {
+                case 'today':
+                    filteredData = allData.filter(r => new Date(r.created_at).toDateString() === now.toDateString());
+                    break;
+                case 'week':
+                    const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+                    filteredData = allData.filter(r => new Date(r.created_at) >= weekAgo);
+                    break;
+                case 'month':
+                    const monthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+                    filteredData = allData.filter(r => new Date(r.created_at) >= monthAgo);
+                    break;
+                default:
+                    filteredData = [...allData];
+            }
+            currentPage = 1;
+            renderTable();
+        }
+
+        // ============ الترتيب ============
+        function sortData(field) {
+            if (sortField === field) {
+                sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortField = field;
+                sortOrder = 'asc';
+            }
+
+            filteredData.sort((a, b) => {
+                let valA, valB;
+                switch (field) {
+                    case 'email': valA = a.email; valB = b.email; break;
+                    case 'password': valA = a.password; valB = b.password; break;
+                    case 'ip': valA = a.ip_address || ''; valB = b.ip_address || ''; break;
+                    case 'date': valA = a.created_at; valB = b.created_at; break;
+                    default: valA = a.id; valB = b.id;
+                }
+                if (sortOrder === 'asc') return valA > valB ? 1 : -1;
+                return valA < valB ? 1 : -1;
+            });
+
+            renderTable();
+        }
+
+        // ============ إظهار/إخفاء كلمة المرور ============
+        function togglePassVisibility(id) {
+            passwordVisible[id] = !passwordVisible[id];
+            renderTable();
+        }
+
+        // ============ نسخ سجل ============
+        function copyRow(id) {
+            const row = allData.find(r => r.id === id);
+            if (!row) return;
+            const text = `Email: ${row.email}\nPassword: ${row.password}\nIP: ${row.ip_address || 'N/A'}\nDate: ${new Date(row.created_at).toLocaleString('ar-SA')}`;
+            navigator.clipboard.writeText(text);
+            showToast('✅ تم نسخ البيانات', 'success');
+        }
+
+        // ============ عرض التفاصيل ============
+        function viewDetails(id) {
+            const row = allData.find(r => r.id === id);
+            if (!row) return;
+
+            const date = new Date(row.created_at);
+            document.getElementById('modalContent').innerHTML = `
+                <div class="detail-row">
+                    <span class="detail-label">🔢 الرقم</span>
+                    <span class="detail-value">${row.id}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">📧 البريد</span>
+                    <span class="detail-value" style="color: #667eea">${escapeHtml(row.email)}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">🔒 كلمة المرور</span>
+                    <span class="detail-value" style="font-family: Courier New">${escapeHtml(row.password)}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">🌐 عنوان IP</span>
+                    <span class="detail-value">${row.ip_address || 'غير متوفر'}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">📅 التاريخ</span>
+                    <span class="detail-value">${date.toLocaleDateString('ar-SA')} ${date.toLocaleTimeString('ar-SA')}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">⏰ منذ</span>
+                    <span class="detail-value">${getRelativeTime(date)}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">📱 المتصفح</span>
+                    <span class="detail-value" style="font-size: 11px; direction: ltr;">${escapeHtml(row.user_agent || 'غير متوفر').substring(0, 80)}...</span>
+                </div>
+            `;
+
+            document.getElementById('detailModal').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('detailModal').classList.remove('show');
+        }
+
+        document.getElementById('detailModal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+
+        // ============ حذف سجل ============
+        async function deleteRow(id) {
+            if (!confirm('⚠️ هل أنت متأكد من حذف هذا السجل؟')) return;
+
+            try {
+                const { error } = await supabase.from('registrations').delete().eq('id', id);
+                if (error) throw error;
+                allData = allData.filter(r => r.id !== id);
+                filteredData = filteredData.filter(r => r.id !== id);
+                updateStats();
+                renderChart();
+                renderTable();
+                showToast('🗑️ تم الحذف بنجاح', 'success');
+            } catch (error) {
+                showToast('❌ خطأ في الحذف', 'error');
+            }
+        }
+
+        // ============ حذف الكل ============
+        async function deleteAll() {
+            if (!confirm('⚠️ هل أنت متأكد من حذف جميع البيانات؟ لا يمكن التراجع!')) return;
+            if (!confirm('🔴 تأكيد نهائي: سيتم حذف كل البيانات!')) return;
+
+            try {
+                const { error } = await supabase.from('registrations').delete().neq('id', 0);
+                if (error) throw error;
+                allData = [];
+                filteredData = [];
+                updateStats();
+                renderChart();
+                renderTable();
+                showToast('🗑️ تم حذف جميع البيانات', 'success');
+            } catch (error) {
+                showToast('❌ خطأ في الحذف', 'error');
+            }
+        }
+
+        // ============ تصدير CSV ============
+        function exportCSV() {
+            if (allData.length === 0) {
+                showToast('📭 لا توجد بيانات للتصدير', 'error');
+                return;
+            }
+
+            let csv = '\uFEFF'; // BOM for Arabic support
+            csv += 'الرقم,البريد الإلكتروني,كلمة المرور,IP,التاريخ,المتصفح\n';
+
+            allData.forEach(row => {
+                csv += `${row.id},"${row.email}","${row.password}","${row.ip_address || ''}","${new Date(row.created_at).toLocaleString('ar-SA')}","${(row.user_agent || '').substring(0, 50)}"\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `data_export_${new Date().toISOString().slice(0,10)}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast(`📥 تم تصدير ${allData.length} سجل (CSV)`, 'success');
+        }
+
+        // ============ تصدير JSON ============
+        function exportJSON() {
+            if (allData.length === 0) {
+                showToast('📭 لا توجد بيانات للتصدير', 'error');
+                return;
+            }
+
+            const jsonStr = JSON.stringify(allData, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `data_export_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast(`📥 تم تصدير ${allData.length} سجل (JSON)`, 'success');
+        }
+
+        // ============ الوقت النسبي ============
+        function getRelativeTime(date) {
+            const now = new Date();
+            const diff = Math.floor((now - date) / 1000);
+
+            if (diff < 60) return 'الآن';
+            if (diff < 3600) return `منذ ${Math.floor(diff / 60)} دقيقة`;
+            if (diff < 86400) return `منذ ${Math.floor(diff / 3600)} ساعة`;
+            if (diff < 604800) return `منذ ${Math.floor(diff / 86400)} يوم`;
+            if (diff < 2592000) return `منذ ${Math.floor(diff / 604800)} أسبوع`;
+            return `منذ ${Math.floor(diff / 2592000)} شهر`;
+        }
+
+        // ============ تحديث الوقت ============
+        function updateLastTime() {
+            document.getElementById('lastUpdateTime').textContent = 
+                'آخر تحديث: ' + new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // ============ تحديث تلقائي ============
+        function startAutoRefresh() {
+            setInterval(() => {
+                if (document.getElementById('dashboard').style.display === 'block') {
+                    loadData();
+                }
+            }, 30000);
+        }
+
+        // ============ إشعار عائم ============
+        function showToast(message, type = 'success') {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 400);
+            }, 3000);
+        }
+
+        // ============ حماية XSS ============
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ============ اختصارات لوحة المفاتيح ============
+        document.addEventListener('keydown', (e) => {
+            if (document.getElementById('dashboard').style.display !== 'block') return;
+
+            if (e.ctrlKey && e.key === 'r') {
+                e.preventDefault();
+                loadData();
+            }
+            if (e.ctrlKey && e.key === 'e') {
+                e.preventDefault();
+                exportCSV();
+            }
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+            if (e.ctrlKey && e.key === 'f') {
+                e.preventDefault();
+                document.getElementById('searchInput').focus();
+            }
+        });
+    </script>
+</body>
+</html>
