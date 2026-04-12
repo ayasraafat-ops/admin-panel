@@ -1,0 +1,23 @@
+
+> ai-app@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.3 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.2:3000
+✓ Ready in 526ms
+
+○ Compiling / ...
+ GET / 200 in 5.7s (next.js: 5.3s, application-code: 453ms)
+ GET / 200 in 77ms (next.js: 6ms, application-code: 71ms)
+⨯ SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>)
+    at POST (src/app/api/chat/route.ts:14:34)
+  12 |
+  13 | export async function POST(req: Request) {
+> 14 |   const { messages } = await req.json();
+     |                                  ^
+  15 |
+  16 |   const result = streamText({
+  17 |     model: openrouter('qwen/qwen3.6-plus'),
+  Reload env: .env.local
